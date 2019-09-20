@@ -1,7 +1,7 @@
 Atividade 04
 Assembly
 
-Utilizando o circuito mostrado no arquivo da pasta, foi elaborado um programa em linguagem de montagem que
+Utilizando o circuito mostrado no arquivo da pasta no Github, foi elaborado um programa em linguagem de montagem que
 faz com que o LED incorporado à placa de desenvolvimento pisque a uma frequência de 1Hz (0.5s aceso e
 0,5s apagado) enquanto o botão está em repouso e a 5Hz (100ms aceso e 100ms apagado) quando o botão é
 pressionado. O LED incorporado está conectado ao pino 13 da placa. Foram utilizadas exclusivamente
