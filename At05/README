@@ -1,0 +1,8 @@
+ATIVIDADE 05
+
+O desafio proposto nesta atividade é desenvolver um programa que controle um LED RGB, sendo sensível a comandos externos dados por dois botões. Em princípio, o estado do LED RGB será alterado de forma periódica pelo microcontrolador, passando por uma sequência pré-definida de estados. A figura Maquina_estado.png nesta pasta resume o comportamento desejado para o sistema na forma de uma máquina de estados finitos.
+
+
+O fluxo dos estados pode se dar no sentido horário (setas em azul) ou no sentido anti-horário (setas em
+vermelho), sendo que o LED RGB deve permanecer em cada estado e, portanto, em cada uma das possíveis
+cores, por um intervalo de tempo controlado pelo programa.

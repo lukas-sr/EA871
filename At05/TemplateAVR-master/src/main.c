@@ -1,7 +1,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
-#define DF_CPU 16000000
+#define F_CPU 16000000
 
 /* Variáveis:
  *
@@ -21,6 +21,7 @@ unsigned char *p_ddrD;
  */
 
 unsigned char *p_portB;
+unsigned char *p_pinB;
 unsigned char *p_portC;
 unsigned char *p_pinC;
 unsigned char *p_portD;
@@ -39,11 +40,18 @@ unsigned char *p_pcicr;
 unsigned char *p_pcmsk;
 unsigned char *p_pcint;
 
-ISR(INT0_vect)
-{
+unsigned int i = 0, cont_botao_A = 0, cont_botao_B = 0;
+unsigned int vetor[8] = {0x00, 0x01, 0x02, 0x04, 0x03, 0x06, 0x05, 0x07};
 
+ISR(INT0_vect){
+	cont_botao_A++;
+	if (cont_botao_A == 4) cont_botao_A = 0;
 }
 
+ISR(PCINT1_vect){
+	cont_botao_B++;
+	if (cont_botao_B == 4) cont_botao_B = 0;
+}
 void setup(void)
 {
 	p_ddrB = (unsigned char *) 0x24;
@@ -52,18 +60,21 @@ void setup(void)
 	p_portB = (unsigned char *) 0x25;
 	p_portC = (unsigned char *) 0x28;
 	p_portD = (unsigned char *) 0x2B;
+	p_pinB = (unsigned char *) 0x23;
 	p_pinC = (unsigned char *) 0x26;
 	p_pinD = (unsigned char *) 0x29;
 	p_mcucr = (unsigned char *) 0x55;
 	p_eicra = (unsigned char *) 0x69;
 	p_eimsk = (unsigned char *) 0x3D;
 	p_pcicr = (unsigned char *) 0x68;
-	p_pcmsk = (unsigned char *) 0x6B;
+	p_pcmsk = (unsigned char *) 0x6C;
+
 
 	*p_ddrB |= 0b00000111;
 	*p_ddrC &= 0b11111110;
 	*p_ddrD &= 0b11111011;
 	
+	*p_pinB |= 0b00000111;					/* Pull-up nos pinos de saída p/ LEDs */
 	*p_portB &= 0b00000000;					/* Inicialmente, LEDs apagados =(000) */
 	*p_portC &= 0b00000001;					/* Para pull-up, PORTC[0] setado em 1 */
 	*p_portD &= 0b00000100;					/* Para pull-up, PORTD[2] setado em 1 */
@@ -71,30 +82,63 @@ void setup(void)
 	*p_eicra |= 0b00000011;					/* INT0 configurado para ser ativado pela borda de subida no pino */
 	*p_eimsk |= 0b00000001;					/* habilita INT0 (se fosse INT1, seria 0b00000010) */
 	*p_mcucr &= 0b11101111;					/* habilita pullup nos pinos que forem setados posteriormente */
-	*p_pcmsk |= 0b00000010;					/* habilita o disparo de interrupções a cada mudança de nível lógico no PCINT1 */
+	*p_pcmsk |= 0b00000001;					/* habilita o disparo de interrupções a cada mudança de nível lógico no PCINT1 */
 	*p_pcicr |= 0b00000010;					/* habilita as interrupções PCINT1 */
 
 	sei(); 									/* seta o flag I no SREG, habilitando as interrupções */
 }
+
+void _sentido(void){
+	//Sentido de rotação dos LEDs
+	if (cont_botao_B == 0){
+		i++;
+		if(*p_portB == 0x07) i=0;
+	}
+
+	else if(cont_botao_B == 1){
+		i++;
+		if(*p_portB == 0x07) i=0;
+	}
+
+	else if(cont_botao_B == 2){
+		i--;
+		if (*p_portB == 0x00) i=7;
+	}
+
+	else if(cont_botao_B == 3){
+		i++;
+		if(*p_portB == 0x07) i=0;			
+	}
+}
+
+void _tempo(void){
+	int t;
+	if (cont_botao_A == 1){
+		for(t = 0; t<20 ; t++){
+			_delay_ms(25);
+		}
+	}
+	else if(cont_botao_A == 2){
+		for(t = 0; t<10 ; t++){
+			_delay_ms(25);
+		}
+	}
+	else if(cont_botao_A == 3){
+		for(t = 0; t<5 ; t++){
+			_delay_ms(25);
+		}
+	}
+	else{
+		_delay_ms(1000);
+	}
+}
 int main(void)
 {
 	setup();
-
+	
 	while (1){
-		
-		*p_portB = 0b0000001;				/* LEDs em vermelho = (001)*/
-		_delay_ms(500);
-		*p_portB = 0b00000010;				/*  LEDs em verde = (010)  */
-		_delay_ms(500);
-		*p_portB = 0b00000100;				/*   LEDs em azul = (100)  */
-		_delay_ms(500);
-		*p_portB = 0b00000011;				/* LEDs em amarelo = (011) */
-		_delay_ms(500);
-		*p_portB = 0b00000110;				/*  LEDs em ciano = (110)  */
-		_delay_ms(500);
-		*p_portB = 0b00000101;				/* LEDs em magenta = (101)*/
-		_delay_ms(500);
-		*p_portB = 0b00000111;				/*  LEDs em branco = (001) */
-		_delay_ms(500);
+		*p_portB=vetor[i];
+		_tempo();
+		_sentido();
 	}
 }
