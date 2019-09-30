@@ -69,13 +69,12 @@ void setup(void)
 	p_pcicr = (unsigned char *) 0x68;
 	p_pcmsk = (unsigned char *) 0x6C;
 
-
 	*p_ddrB |= 0b00000111;
 	*p_ddrC &= 0b11111110;
 	*p_ddrD &= 0b11111011;
 	
 	*p_pinB |= 0b00000111;					/* Pull-up nos pinos de saída p/ LEDs */
-	*p_portB &= 0b00000000;					/* Inicialmente, LEDs apagados =(000) */
+	*p_portB &= 0b11111000;					/* Inicialmente, LEDs apagados =(000) */
 	*p_portC &= 0b00000001;					/* Para pull-up, PORTC[0] setado em 1 */
 	*p_portD &= 0b00000100;					/* Para pull-up, PORTD[2] setado em 1 */
 
@@ -137,7 +136,7 @@ int main(void)
 	setup();
 	
 	while (1){
-		*p_portB=vetor[i];
+		*p_portB = vetor[i];
 		_tempo();
 		_sentido();
 	}
