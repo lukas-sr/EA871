@@ -89,6 +89,7 @@ void setup(void)
 
 void _sentido(void){
 	//Sentido de rotação dos LEDs
+
 	if (cont_botao_B == 0){
 		i++;
 		if(*p_portB == 0x07) i=0;
@@ -136,8 +137,9 @@ int main(void)
 	setup();
 	
 	while (1){
-		*p_portB = vetor[i];
+		*p_portB |= vetor[i];
 		_tempo();
 		_sentido();
+		*p_portB &= 0b11111000;					/* Inicialmente, LEDs apagados =(000) */
 	}
 }
