@@ -38,12 +38,11 @@ setup(){
 }
 
 void le_strings(char vet[]){
-
 	int i;
 
 	for( i=0 ; vet[i]!='\0' ;){
 		*p_udr0 = vet[i];
-
+		
 		if(*p_ucsra & 0b00100000){
 			i++;
 			_delay_ms(100);
