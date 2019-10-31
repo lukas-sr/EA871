@@ -1,27 +1,37 @@
-#include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include <avr/io.h>
 #define F_CPU 16000000
+#define MAX 10
 
-volatile unsigned char *DDRB;
-volatile unsigned char *PORTB;
-volatile unsigned char *PINB;
-volatile unsigned char *UCSR0A;
-volatile unsigned char *UCSR0B;
-volatile unsigned char *UCSR0C;
-volatile unsigned char *UDR0;
-volatile unsigned char *UBRR0H;
-volatile unsigned char *UBRR0L;
+volatile unsigned char *_DDRB;
+volatile unsigned char *_PORTB;
+volatile unsigned char *_PINB;
+volatile unsigned char *_UCSR0A;
+volatile unsigned char *_UCSR0B;
+volatile unsigned char *_UCSR0C;
+volatile unsigned char *_UDR0;
+volatile unsigned char *_UBRR0H;
+volatile unsigned char *_UBRR0L;
+unsigned char buffer[MAX], letra;
+unsigned int i = 0, k = 0;
+
+
+void adicionar_buffer(char c) {
+ if (k<MAX){
+    buffer[i] = c;
+    i++;
+  	k++;
+  }
+}
+
+ISR (USART_RX_vect){
+	letra = *_UDR0;
+	adicionar_buffer(letra);
+}
 
 void setup(){
-    
-    UCSR0A = (unsigned char *) 0xC0;
-    UCSR0B = (unsigned char *) 0xC1;
-    UCSR0C = (unsigned char *) 0xC2;
-    UBRR0H = (unsigned char *) 0xC4;
-    UBRR0L = (unsigned char *) 0xC5;
-    UDR0 = (unsigned char *) 0xC6;
-    
+
     /*
      * ESPECIFICAÇÕES PARA UART:
      * 
@@ -31,17 +41,15 @@ void setup(){
      * Modo assíncrono de funcionamento da USART: UCSR0C[7:6] => 00(UMSEL) e UCSR0C[0] => 0
      * Sem bits de paridade: UCSR0C[5:4] => 00
      * Uso de dois bits de parada
-     * Baud rate igual a 9.600 bps: UBBRn => 103
-     * 
+     * Interrupção do tipo recepção completa habilitada: UCSR0B[7] => 1
      */
-    
-    *UCSR0A |= 0x00;
-    *UCSR0B |= 0x08;
-    *UCSR0C |= 0x06;
 
-	//Setando o baundrate como 9600 bps, UBRRn[11:0] precisa ser setado como 103
-	*UBRR0H = 0;
-	*UBRR0L = 103; //0b01100111 = 103
+    _UCSR0A = (unsigned char *) 0xC0;
+    _UCSR0B = (unsigned char *) 0xC1;
+    _UCSR0C = (unsigned char *) 0xC2;
+    _UBRR0H = (unsigned char *) 0xC4;
+    _UBRR0L = (unsigned char *) 0xC5;
+    _UDR0 = (unsigned char *) 0xC6;
 
 	/*
 	 * Para USART Control Status Registrador A (UCSR0A):
@@ -53,33 +61,41 @@ void setup(){
 	 * 
 	 * UDRE0: esta flag indica se o buffer de transmissão (UDR0) está pronto para receber novos dados. 
 	 * Se UDRE0 = 1, então o buffer está vazio e pode ser escrito.
-	 * 
+	 */
+    
+    *_UCSR0A |= 0x00;
+    *_UCSR0B |= 0x88;
+    *_UCSR0C |= 0x06;	
+
+	*_UBRR0H = 0;
+	*_UBRR0L = 103;
+
+	/* 
+	 * Configurando o baundrate como 9600 bps, UBRRn[11:0] precisa ser setado como 0b01100111 = 103
+	 */
+	
+	*_DDRB |= 0x07;
+	*_PORTB &= 0xF8;
+	
+	/*
+	 * LED RGB conectado na GPIO pinos 8(B0), 9(B1) e 10(B2).
+	 * Pinos setados como saída de dados DDRB[2:0] => 1
+	 * LED RGB inicialmente desligado PORTB[2:0] => 0
 	 */
 
-	*DDRB |= 0x07;
-	*PORTB &= 0xF8; //Leds inicialmente desligados
+	sei();
+
+	/*
+	 * sei() seta o flag I no SREG, habilitando interrupção 
+	 */
 }
 
-/*
-void le_strings(char vet[]){
-	int i;
-
-	for( i=0 ; vet[i]!='\0' ;){
-		*p_udr0 = vet[i];
-		
-		if(*p_ucsra & 0b00100000){
-			i++;
-			_delay_ms(100);
-		}
-	}
-
-}*/
 
 int main (){
-
+	
 	setup();
-
+	
 	while(1){
-
+		if(buffer[i] == 'r') *_PORTB = 0x01; 
 	}
 }
