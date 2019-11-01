@@ -1,145 +1,99 @@
-#include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include <avr/io.h>
 #define F_CPU 16000000
+#define MAX 10
 
-/* Variáveis:
- *
- * DDRB, DDRC e DDRD para configurarmos direção dos dados (data direction register)
- * LedRGB usado no DDRB, usando pinos 8,9 e 10 (PB0,PB1 e PB2) setado como saída/escrita
- * Primeiro botao no DDRC no pino 0 (A0) setado como entrada/leitura, então seu valor igual a 0, sentido da transição
- * Segundo botão no DDRD nos pino 2 (PD2) setado como entrada/leitura, então seu valor igual a 0, controle de velocidade 
- */
+volatile unsigned char *_DDRB;
+volatile unsigned char *_PORTB;
+volatile unsigned char *_PINB;
+volatile unsigned char *_UCSR0A;
+volatile unsigned char *_UCSR0B;
+volatile unsigned char *_UCSR0C;
+volatile unsigned char *_UDR0;
+volatile unsigned char *_UBRR0H;
+volatile unsigned char *_UBRR0L;
+unsigned char buffer[MAX], letra;
+unsigned int i = 0, k = 0;
 
-unsigned char *p_ddrB;
-unsigned char *p_ddrC;
-unsigned char *p_ddrD;
-
-/* DDRB como saída/escrita, precisa-se do registrador de endereços de entrada da porta B (PINB)
- * DDRC como entrada/leitura do botão, precisa-se usar o registrador de dados da porta C (PORTC), alem do pullup nesse mesmo pino, então (PINC)=1 
- * DDRD como entrada/leitura do botão 2, precisa-se usar o registrador de dados da porta D (PORTD), alem do pullup nesse mesmo pino, então (PIND)=1
- */
-
-unsigned char *p_portB;
-unsigned char *p_pinB;
-unsigned char *p_portC;
-unsigned char *p_pinC;
-unsigned char *p_portD;
-unsigned char *p_pinD;
-
-/* MCURC como setup do pull-up, precisa-se fazer MCURC[4] = 0 para habilitar o pull-up 
- * EICRA e EIMSK, registradores para configurar as interrupções nos pinos INT0
- * PCICR para habilitar PCINT1
- * PCICR1 para o botão que controla o sentido da transição em A0
- */
-
-unsigned char *p_mcucr;
-unsigned char *p_eicra;
-unsigned char *p_eimsk;
-unsigned char *p_pcicr;
-unsigned char *p_pcmsk;
-unsigned char *p_pcint;
-
-unsigned int i = 0, cont_botao_A = 0, cont_botao_B = 0;
-unsigned int vetor[8] = {0x00, 0x01, 0x02, 0x04, 0x03, 0x06, 0x05, 0x07};
-
-ISR(INT0_vect){
-	cont_botao_A++;
-	if (cont_botao_A == 4) cont_botao_A = 0;
+void adicionar_buffer(char c) {
+ if (k<MAX){
+    buffer[i] = c;
+    i++;
+  	k++;
+  }
 }
 
-ISR(PCINT1_vect){
-	cont_botao_B++;
-	if (cont_botao_B == 4) cont_botao_B = 0;
+ISR (USART_RX_vect){
+	letra = *_UDR0;
+	adicionar_buffer(letra);
 }
-void setup(void)
-{
-	p_ddrB = (unsigned char *) 0x24;
-	p_ddrC = (unsigned char *) 0x27;
-	p_ddrD = (unsigned char *) 0x2A;
-	p_portB = (unsigned char *) 0x25;
-	p_portC = (unsigned char *) 0x28;
-	p_portD = (unsigned char *) 0x2B;
-	p_pinB = (unsigned char *) 0x23;
-	p_pinC = (unsigned char *) 0x26;
-	p_pinD = (unsigned char *) 0x29;
-	p_mcucr = (unsigned char *) 0x55;
-	p_eicra = (unsigned char *) 0x69;
-	p_eimsk = (unsigned char *) 0x3D;
-	p_pcicr = (unsigned char *) 0x68;
-	p_pcmsk = (unsigned char *) 0x6C;
 
-	*p_ddrB |= 0b00000111;
-	*p_ddrC &= 0b11111110;
-	*p_ddrD &= 0b11111011;
+void setup(){
+
+    /*
+     * ESPECIFICAÇÕES PARA UART:
+     * 
+     * Velocidade de transmissão normal (i.e., modo double-speed desativado)
+     * Modo de transmissão multi-processador desabilitado
+     * Número de bits de dados por frame igual a 8: UCZ0n[2:0] => 011 (UCSR0B UCSR0C)
+     * Modo assíncrono de funcionamento da USART: UCSR0C[7:6] => 00(UMSEL) e UCSR0C[0] => 0
+     * Sem bits de paridade: UCSR0C[5:4] => 00
+     * Uso de dois bits de parada
+     * Interrupção do tipo recepção completa habilitada: UCSR0B[7] => 1
+     */
 	
-	*p_pinB |= 0b00000111;					/* Pull-up nos pinos de saída p/ LEDs */
-	*p_portB &= 0b11111000;					/* Inicialmente, LEDs apagados =(000) */
-	*p_portC &= 0b00000001;					/* Para pull-up, PORTC[0] setado em 1 */
-	*p_portD &= 0b00000100;					/* Para pull-up, PORTD[2] setado em 1 */
+	_DDRB = (unsigned char *) 0x24;
+	_PORTB = (unsigned char *) 0x25;
+    _UCSR0A = (unsigned char *) 0xC0;
+    _UCSR0B = (unsigned char *) 0xC1;
+    _UCSR0C = (unsigned char *) 0xC2;
+    _UBRR0H = (unsigned char *) 0xC4;
+    _UBRR0L = (unsigned char *) 0xC5;
+    _UDR0 = (unsigned char *) 0xC6;
+	
+	/*
+	 * Para USART Control Status Registrador A (UCSR0A):
+	 *  
+	 * RXCO: esta flag é setada quando existem dados válidos que ainda não foram lidos no buffer de recepção.
+	 * 
+	 * TXCO: esta flag é setada quando todo o frame no buffer de transmissão foi deslocado (ou seja, o dado foi enviado) 
+	 * e não há mais novos dados presentes no registrador UDR0.
+	 * 
+	 * UDRE0: esta flag indica se o buffer de transmissão (UDR0) está pronto para receber novos dados. 
+	 * Se UDRE0 = 1, então o buffer está vazio e pode ser escrito.
+	 */
+    
+    *_UCSR0A |= 0x00;
+    *_UCSR0B |= 0x88;
+    *_UCSR0C |= 0x06;
+	*_UBRR0H = 0;
+	*_UBRR0L = 103;
 
-	*p_eicra |= 0b00000011;					/* INT0 configurado para ser ativado pela borda de subida no pino */
-	*p_eimsk |= 0b00000001;					/* habilita INT0 (se fosse INT1, seria 0b00000010) */
-	*p_mcucr &= 0b11101111;					/* habilita pullup nos pinos que forem setados posteriormente */
-	*p_pcmsk |= 0b00000001;					/* habilita o disparo de interrupções a cada mudança de nível lógico no PCINT1 */
-	*p_pcicr |= 0b00000010;					/* habilita as interrupções PCINT1 */
-
-	sei(); 									/* seta o flag I no SREG, habilitando as interrupções */
+	/* 
+	 * Configurando o baundrate como 9600 bps, UBRRn[11:0] precisa ser setado como 0b01100111 = 103
+	 */
+	
+	*_DDRB |= 0b00000111; 
+	//*_PORTB &= 0b11111000;	
+	*_PORTB |= 0b00000111;
+	
+	/*
+	 * LED RGB conectado na GPIO pinos 8(B0), 9(B1) e 10(B2).
+	 * Pinos setados como saída de dados DDRB[2:0] => 1
+	 * LED RGB inicialmente desligado PORTB[2:0] => 0
+	 */
+	sei();
+	/*
+	 * sei() seta o flag I no SREG, habilitando interrupção 
+	 */
 }
 
-void _sentido(void){
-	//Sentido de rotação dos LEDs
 
-	if (cont_botao_B == 0){
-		i++;
-		if(*p_portB == 0x07) i=0;
-	}
-
-	else if(cont_botao_B == 1){
-		i++;
-		if(*p_portB == 0x07) i=0;
-	}
-
-	else if(cont_botao_B == 2){
-		i--;
-		if (*p_portB == 0x00) i=7;
-	}
-
-	else if(cont_botao_B == 3){
-		i++;
-		if(*p_portB == 0x07) i=0;			
-	}
-}
-
-void _tempo(void){
-	int t;
-	if (cont_botao_A == 1){
-		for(t = 0; t<20 ; t++){
-			_delay_ms(25);
-		}
-	}
-	else if(cont_botao_A == 2){
-		for(t = 0; t<10 ; t++){
-			_delay_ms(25);
-		}
-	}
-	else if(cont_botao_A == 3){
-		for(t = 0; t<5 ; t++){
-			_delay_ms(25);
-		}
-	}
-	else{
-		_delay_ms(1000);
-	}
-}
-int main(void)
-{
+int main (){
+	
 	setup();
 	
-	while (1){
-		*p_portB |= vetor[i];
-		_tempo();
-		_sentido();
-		*p_portB &= 0b11111000;					/* Inicialmente, LEDs apagados =(000) */
+	while(1){
 	}
 }
