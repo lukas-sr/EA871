@@ -7,6 +7,7 @@
 volatile unsigned char *_DDRB;
 volatile unsigned char *_PORTB;
 volatile unsigned char *_PINB;
+volatile unsigned char *_MCUCR;
 volatile unsigned char *_UCSR0A;
 volatile unsigned char *_UCSR0B;
 volatile unsigned char *_UCSR0C;
@@ -16,7 +17,7 @@ volatile unsigned char *_UBRR0L;
 unsigned char buffer[MAX], letra;
 unsigned int i = 0, k = 0;
 
-
+/*
 void adicionar_buffer(char c) {
  if (k<MAX){
     buffer[i] = c;
@@ -24,10 +25,10 @@ void adicionar_buffer(char c) {
   	k++;
   }
 }
-
+*/
 ISR (USART_RX_vect){
 	letra = *_UDR0;
-	adicionar_buffer(letra);
+//	adicionar_buffer(letra);
 }
 
 void setup(){
@@ -43,7 +44,11 @@ void setup(){
      * Uso de dois bits de parada
      * Interrupção do tipo recepção completa habilitada: UCSR0B[7] => 1
      */
-
+	
+    _PINB = (unsigned char *) 0x23;
+	_DDRB = (unsigned char *) 0x24;
+	_PORTB = (unsigned char *) 0x25;
+	_MCUCR = (unsigned char *) 0x55;
     _UCSR0A = (unsigned char *) 0xC0;
     _UCSR0B = (unsigned char *) 0xC1;
     _UCSR0C = (unsigned char *) 0xC2;
@@ -74,8 +79,9 @@ void setup(){
 	 * Configurando o baundrate como 9600 bps, UBRRn[11:0] precisa ser setado como 0b01100111 = 103
 	 */
 	
-	*_DDRB |= 0x07;
-	*_PORTB &= 0xF8;
+	*_DDRB |= 0b00000111;
+	*_PORTB|= 0b00000111;
+//	*_PINB |= 0b00000111;	
 	
 	/*
 	 * LED RGB conectado na GPIO pinos 8(B0), 9(B1) e 10(B2).
@@ -83,6 +89,8 @@ void setup(){
 	 * LED RGB inicialmente desligado PORTB[2:0] => 0
 	 */
 
+//	*_MCUCR &= 0b11101111;
+	
 	sei();
 
 	/*
@@ -96,6 +104,13 @@ int main (){
 	setup();
 	
 	while(1){
-		if(buffer[i] == 'r') *_PORTB = 0x01; 
+		if(letra == 'r'){
+			 *_PORTB = 0x01;
+			 //definir mensagem
+			 //enviar -> interrupção TX OU buffer vazio
+			 //enviar para UR0 (TX)
+			 //
+		}
+		else if
 	}
 }
