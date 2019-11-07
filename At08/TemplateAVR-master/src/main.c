@@ -10,8 +10,11 @@ volatile unsigned char *p_ucsrc;
 volatile unsigned char *p_ubrrh;
 volatile unsigned char *p_ubrrl;
 volatile unsigned char *p_udr0;
+volatile unsigned char *p_tccr2a;
+volatile unsigned char *p_tccr2b;
+volatile unsigned char *p_timsk;
 
-setup(){
+void setup(){
 	p_ucsra = (unsigned char *) 0xC0;
 	p_ucsrb = (unsigned char *) 0xC1;
 	p_ucsrc = (unsigned char *) 0xC2;
@@ -49,17 +52,15 @@ void le_strings(char vet[]){
 		_delay_ms(100);
 
 	}
-
 }
-int main (){
 
+int main (){
 	setup();
 
-	char msg[] = "»Esta é a coisa que tudo devora\n»Feras,aves, plantas, flora.\n»Aço e ferro são sua comida,\n»E a dura pedra por ele moída;\n»Aos reis abate,a cidade arruína\n»E a alta montanha faz pequenina.";
-	char end[] = "\n»Mensagem transmitida com sucesso...";
+	char msg[] = "Atividade 8 - Interrupcoes temporizadas tratam concorrencia entre taregas!\n";
+	char end[] = "Mensagem transmitida com sucesso!";
 
-	while(1){
-		
+	while(1){	
 		le_strings(msg);
 		le_strings(end);
 		_delay_ms(5000);
