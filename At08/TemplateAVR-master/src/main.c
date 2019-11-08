@@ -6,14 +6,15 @@
 unsigned volatile int k = 0, n = 0;
 
 ISR(TIMER2_COMPA_vect){
-	k = k+1;						//Contador para piscar LED externo a placa
-	if (k <= (490/2)) PORTB = 0x10;	//Como o tempo em segundos está configurado = 0,00102: 0,5/0,00102 ~= 490 ciclos
-	if (k >= (490)) PORTB &= 0;
-	if (k >= (490*2)) k = 0;
+	k = k+1;							//Contador para piscar LED externo a placa
+	if (k == (245)) PORTB |= 0x10;		//Como o tempo em segundos está configurado = 0,00102: (0,5/0,00102)/2 ~= 245 ciclos
+	if (k == (245*2)) PORTB &= 0xEF;	
+	if (k >= (245*3)) k = 0;
 	
 	n = n+1;						//Contador para piscar o LED interno da placa
-	if (n <= (765)) PORTB = 0x20;		//Precisa-se de 0,78: 0,78/0,00102 ~= 765 ciclos
-	
+	if (n <= (383)) PORTB |= 0x20;		//Precisa-se de 0,78: (0,78/0,00102)/2 ~= 383 ciclos
+	if (n >= (383*2)) PORTB &= 0xDF;
+	if (n >= (383*3)) n=0;
 }
 
 
