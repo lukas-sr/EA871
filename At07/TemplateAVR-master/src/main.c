@@ -4,20 +4,19 @@
 #define F_CPU 16000000
 #define MAX 10
 
-volatile unsigned char *_DDRB;
-volatile unsigned char *_PORTB;
-volatile unsigned char *_PINB;
-volatile unsigned char *_MCUCR;
-volatile unsigned char *_UCSR0A;
-volatile unsigned char *_UCSR0B;
-volatile unsigned char *_UCSR0C;
-volatile unsigned char *_UDR0;
-volatile unsigned char *_UBRR0H;
-volatile unsigned char *_UBRR0L;
-unsigned char buffer[MAX], letra;
+unsigned char *_DDRB;
+unsigned char *_PORTB;
+unsigned char *_MCUCR;
+unsigned char *_UCSR0A;
+unsigned char *_UCSR0B;
+unsigned char *_UCSR0C;
+unsigned char *_UDR0;
+unsigned char *_UBRR0H;
+unsigned char *_UBRR0L;
 unsigned int i = 0, k = 0;
+char symbol, buffer[MAX];
 
-/*
+/* DEPOIS FAZER ISSO
 void adicionar_buffer(char c) {
  if (k<MAX){
     buffer[i] = c;
@@ -27,12 +26,14 @@ void adicionar_buffer(char c) {
 }
 */
 ISR (USART_RX_vect){
-	letra = *_UDR0;
-//	adicionar_buffer(letra);
+	symbol = *_UDR0;
 }
+//	adicionar_buffer(letra);
 
+ISR (USART_TX_vect){
+	*_UDR0 = "L";
+}
 void setup(){
-
     /*
      * ESPECIFICAÇÕES PARA UART:
      * 
@@ -45,8 +46,7 @@ void setup(){
      * Interrupção do tipo recepção completa habilitada: UCSR0B[7] => 1
      */
 	
-    _PINB = (unsigned char *) 0x23;
-	_DDRB = (unsigned char *) 0x24;
+    _DDRB = (unsigned char *) 0x24;
 	_PORTB = (unsigned char *) 0x25;
 	_MCUCR = (unsigned char *) 0x55;
     _UCSR0A = (unsigned char *) 0xC0;
@@ -68,49 +68,49 @@ void setup(){
 	 * Se UDRE0 = 1, então o buffer está vazio e pode ser escrito.
 	 */
     
-    *_UCSR0A |= 0x00;
-    *_UCSR0B |= 0x88;
-    *_UCSR0C |= 0x06;	
+    *_UCSR0A &= 0b11111100;
+    *_UCSR0B |= 0b11011000;
+	*_UCSR0B &= 0b11111011;
+    *_UCSR0C &= 0b00001111;
+	*_UCSR0C |= 0b00001110;
 
+	// Configurando o baundrate como 9600 bps, UBRRn[11:0] precisa ser setado como 0b01100111 = 103
 	*_UBRR0H = 0;
 	*_UBRR0L = 103;
-
-	/* 
-	 * Configurando o baundrate como 9600 bps, UBRRn[11:0] precisa ser setado como 0b01100111 = 103
-	 */
-	
-	*_DDRB |= 0b00000111;
-	*_PORTB|= 0b00000111;
-//	*_PINB |= 0b00000111;	
 	
 	/*
 	 * LED RGB conectado na GPIO pinos 8(B0), 9(B1) e 10(B2).
 	 * Pinos setados como saída de dados DDRB[2:0] => 1
 	 * LED RGB inicialmente desligado PORTB[2:0] => 0
 	 */
-
-//	*_MCUCR &= 0b11101111;
 	
+	*_DDRB = 0b00000111;
+	*_PORTB &= 0b11111000;
+	
+	// sei() seta o flag I no SREG, habilitando interrupção 
 	sei();
-
-	/*
-	 * sei() seta o flag I no SREG, habilitando interrupção 
-	 */
 }
 
-
 int main (){
-	
 	setup();
-	
+	int j = 0;
+	char msg[] = "Vazio!\n";
+
 	while(1){
-		if(letra == 'r'){
-			 *_PORTB = 0x01;
-			 //definir mensagem
-			 //enviar -> interrupção TX OU buffer vazio
-			 //enviar para UR0 (TX)
-			 //
+		if(symbol == 'r'){
+			*_PORTB = 1;
+			}
+		else if(symbol == 'g'){
+			*_PORTB = 2;
 		}
-		else if
+		else if(symbol == 'b'){
+			*_PORTB = 4;
+		}			
+		_delay_ms(500);
+		
+			//definir mensagem	
+			//enviar -> interrupção TX OU buffer vazio
+			//enviar para UR0 (TX)
+			//
 	}
 }
