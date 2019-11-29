@@ -27,10 +27,10 @@ void config(void){
 	TIMSK2 = 0x01;
 	
 	//Utilizado pino digital PWM 11 do Arduino como INPUT
-	DDRB = 0x07;
+	DDRB = 0x08;
 	
 	//LED inicialmente ligado
-	PORTB = 0x07;
+	PORTB = 0x08;
 	
 	sei();
 }
