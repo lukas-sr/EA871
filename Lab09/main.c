@@ -11,7 +11,7 @@
 volatile unsigned int control = 0;
 
 ISR(TIMER2_OVF_vect){
-	
+	control++;
 }
 	
 void config(void){
