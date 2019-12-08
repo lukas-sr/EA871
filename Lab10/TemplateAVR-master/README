@@ -1,0 +1,31 @@
+This is a minimalist template for an avr-gcc project.
+All files in this template are in public domain, so feel
+free to use for whatever you want.
+
+How to use this template:
+
+Compile:
+	make
+
+Upload:
+	make burn
+	
+Compile and upload:
+	make fast
+
+Clean output files:
+	make clean
+
+Reset the target:
+	make rst
+
+Dependencies:
+
+This template uses by default avr-gcc to compile and link,
+and avrdude to upload to the target microcontroller through
+usbasp, but of course you can change it to suit your needs.
+
+Setup instructions for Ubuntu:
+	sudo apt install make avr-libc avrdude binutils-avr gcc-avr
+
+
