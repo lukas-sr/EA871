@@ -1,2 +1,2 @@
 # EA871
-Laboratório programação básica de sistemas digitais
+Basic programming for embedded systems
